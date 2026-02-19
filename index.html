@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Hukum Kekekalan Massa - Silinder Abu Muda</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Segoe UI', sans-serif; overflow: hidden; background: #ffffff; touch-action: none; }
+        canvas { display: block; width: 100vw; height: 100vh; }
+        
+        #ui-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
+        #header { background: rgba(255, 255, 255, 0.9); color: #333; padding: 15px; text-align: center; pointer-events: auto; border-bottom: 3px solid #6c5ce7; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        
+        .toggle-btn { position: fixed; top: 90px; right: 15px; width: 50px; height: 50px; border-radius: 50%; background: #6c5ce7; border: none; color: white; cursor: pointer; pointer-events: auto; font-size: 20px; box-shadow: 0 4px 10px rgba(108, 92, 231, 0.3); }
+        
+        #info-panel { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #ffffff; padding: 30px; overflow-y: auto; transform: translateX(-100%); transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1); pointer-events: auto; z-index: 1000; color: #333; }
+        #info-panel.show { transform: translateX(0); }
+        
+        .calc-container { background: #f9f9ff; padding: 20px; border-radius: 15px; border: 1px solid #e0e0ff; margin: 20px 0; }
+        .calc-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+        .calc-row input { width: 90px; padding: 10px; border: 2px solid #ddd; border-radius: 8px; text-align: center; font-weight: bold; outline: none; }
+        .calc-row input:focus { border-color: #6c5ce7; }
+        
+        .result-box { background: #6c5ce7; color: #ffffff; padding: 20px; border-radius: 12px; text-align: center; margin-top: 15px; }
+        .law-quote { background: #f3f0ff; border-left: 5px solid #6c5ce7; padding: 15px; margin-top: 20px; font-style: italic; line-height: 1.6; color: #444; }
+        
+        #controls { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); display: flex; gap: 15px; pointer-events: auto; }
+        .control-btn { padding: 15px 30px; border: none; border-radius: 30px; cursor: pointer; font-weight: bold; text-transform: uppercase; transition: 0.3s; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        #burn-btn { background: #6c5ce7; color: white; }
+        .reset-btn { background: #ffffff; color: #6c5ce7; border: 1px solid #6c5ce7; }
+        
+        #loading { position: fixed; inset: 0; background: #ffffff; color: #6c5ce7; display: flex; align-items: center; justify-content: center; z-index: 2000; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div id="loading">Memuat Laboratorium...</div>
+
+    <div id="ui-container">
+        <div id="header">
+            <h1 style="color: #6c5ce7;">Hukum Kekekalan Massa</h1>
+            <p>Eksperimen <span style="color:#ff7675">Mg (Merah)</span> + <span style="color:#0984e3">O₂ (Biru)</span> → <span style="color:#6c5ce7">MgO (Ungu)</span></p>
+        </div>
+
+        <button class="toggle-btn" onclick="toggleInfo()">ℹ️</button>
+
+        <div id="info-panel">
+            <button style="float:right; background:#6c5ce7; color:white; border:none; padding:8px 18px; border-radius:20px; cursor:pointer;" onclick="toggleInfo()">Tutup ×</button>
+            <h2 style="color: #6c5ce7; margin-bottom: 15px;">⚖️ Kalkulator Massa</h2>
+            
+            <div class="calc-container">
+                <div class="calc-row">
+                    <span>Massa Magnesium (Mg)</span>
+                    <input type="number" id="massMg" value="24" oninput="calculateMass()">
+                </div>
+                <div class="calc-row">
+                    <span>Massa Oksigen (O₂)</span>
+                    <input type="number" id="massO" value="16" oninput="calculateMass()">
+                </div>
+                <div class="result-box">
+                    <div style="font-size: 0.85em; opacity: 0.9; margin-bottom: 5px;">TOTAL MASSA PRODUK (MgO)</div>
+                    <div id="totalMass" style="font-size: 2.5em; font-weight: bold;">40.00</div>
+                    <span>GRAM</span>
+                </div>
+            </div>
+
+            <h3 style="margin-top: 25px; color: #6c5ce7;">Persamaan Reaksi:</h3>
+            <div style="background:#f9f9f9; padding:15px; border-radius:8px; font-family: monospace; font-size: 1.2em; text-align: center; margin: 10px 0; border: 1px solid #eee;">
+                2Mg<sub>(s)</sub> + O<sub>2(g)</sub> → 2MgO<sub>(s)</sub>
+            </div>
+
+            <h3 style="margin-top: 25px; color: #6c5ce7;">Bunyi Hukum:</h3>
+            <div class="law-quote">
+                "Dalam sistem tertutup, massa zat sebelum reaksi adalah sama dengan massa zat sesudah reaksi."
+                <br><br>
+                <strong>— Antoine Lavoisier</strong>
+            </div>
+        </div>
+
+        <div id="controls">
+            <button class="control-btn" id="burn-btn" onclick="triggerReaction()">🔥 Mulai Reaksi</button>
+            <button class="control-btn reset-btn" onclick="location.reload()">↻ Reset</button>
+        </div>
+    </div>
+
+    <script>
+        let scene, camera, renderer, experimentGroup;
+        let mgRibbon, oxygenClouds = [];
+        let isBurned = false;
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xffffff);
+
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 0, 18);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            document.body.appendChild(renderer.domElement);
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+            scene.add(ambientLight);
+
+            const pointLight = new THREE.PointLight(0xffffff, 0.5);
+            pointLight.position.set(5, 10, 10);
+            scene.add(pointLight);
+
+            experimentGroup = new THREE.Group();
+            
+            // REVISI: Mengubah warna silinder menjadi Abu-abu Muda (0xdddddd)
+            const jarGeo = new THREE.CylinderGeometry(4, 4, 10, 128);
+            const jarMat = new THREE.MeshPhongMaterial({ 
+                color: 0xdddddd, transparent: true, opacity: 0.15, side: THREE.DoubleSide 
+            });
+            const jar = new THREE.Mesh(jarGeo, jarMat);
+            experimentGroup.add(jar);
+
+            // Magnesium (Warna Merah)
+            const mgGeo = new THREE.BoxGeometry(2, 0.15, 0.8);
+            const mgMat = new THREE.MeshPhongMaterial({ color: 0xff7675 });
+            mgRibbon = new THREE.Mesh(mgGeo, mgMat);
+            mgRibbon.position.set(0, -3.5, 0);
+            experimentGroup.add(mgRibbon);
+
+            // Oksigen (Warna Biru)
+            for(let i=0; i<30; i++) {
+                const oGeo = new THREE.SphereGeometry(0.15, 16, 16);
+                const oMat = new THREE.MeshPhongMaterial({ color: 0x0984e3 });
+                const cloud = new THREE.Mesh(oGeo, oMat);
+                cloud.position.set((Math.random()-0.5)*6, (Math.random()-0.5)*8, (Math.random()-0.5)*6);
+                oxygenClouds.push(cloud);
+                experimentGroup.add(cloud);
+            }
+
+            scene.add(experimentGroup);
+            document.getElementById('loading').style.display = 'none';
+            animate();
+        }
+
+        function calculateMass() {
+            const mg = parseFloat(document.getElementById('massMg').value) || 0;
+            const o = parseFloat(document.getElementById('massO').value) || 0;
+            document.getElementById('totalMass').innerText = (mg + o).toFixed(2);
+        }
+
+        function triggerReaction() {
+            if(isBurned) return;
+            isBurned = true;
+            document.getElementById('burn-btn').style.display = "none";
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 0.04;
+                mgRibbon.material.color.lerp(new THREE.Color(0x6c5ce7), 0.1); 
+                mgRibbon.scale.set(1 + progress * 0.6, 1 + progress * 4, 1 + progress * 0.6);
+                oxygenClouds.forEach(c => {
+                    c.position.lerp(mgRibbon.position, 0.1);
+                    if(c.position.distanceTo(mgRibbon.position) < 0.5) c.visible = false;
+                });
+                if(progress >= 4) {
+                    clearInterval(interval);
+                    alert("Reaksi Selesai! Magnesium (Merah) + Oksigen (Biru) menghasilkan Magnesium Oksida (Ungu).");
+                }
+            }, 50);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            experimentGroup.rotation.y += 0.005;
+            renderer.render(scene, camera);
+        }
+
+        function toggleInfo() {
+            document.getElementById('info-panel').classList.toggle('show');
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        init();
+    </script>
+</body>
+</html>
